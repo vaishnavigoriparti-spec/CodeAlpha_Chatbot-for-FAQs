@@ -282,23 +282,10 @@ def get_tts_button_html(text, message_id):
     escaped_text = html.escape(text.replace("'", "\\'").replace("\n", " "))
     button_id = f"tts_btn_{message_id}"
     
+    # We write the button element entirely on a single line to prevent the Streamlit Markdown parser from leaking raw code.
     html_content = f"""
     <div style="display: flex; justify-content: flex-end; margin-top: -10px; margin-bottom: 15px;">
-        <button id="{button_id}" class="custom-tts-btn" onclick="
-            window.speechSynthesis.cancel();
-            var msg = new SpeechSynthesisUtterance('{escaped_text}');
-            msg.rate = 1.0;
-            msg.pitch = 1.05;
-            // Find an English voice if available
-            var voices = window.speechSynthesis.getVoices();
-            var englishVoice = voices.find(v => v.lang.startsWith('en'));
-            if(englishVoice) msg.voice = englishVoice;
-            
-            window.speechSynthesis.speak(msg);
-            var btn = document.getElementById('{button_id}');
-            btn.innerHTML = '🔊 Speaking...';
-            msg.onend = function() {{ btn.innerHTML = '🔊 Listen'; }};
-        ">🔊 Listen</button>
+        <button id="{button_id}" class="custom-tts-btn" onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{escaped_text}'); msg.rate = 1.0; msg.pitch = 1.05; var voices = window.speechSynthesis.getVoices(); var englishVoice = voices.find(v => v.lang.startsWith('en')); if(englishVoice) msg.voice = englishVoice; window.speechSynthesis.speak(msg); var btn = document.getElementById('{button_id}'); btn.innerHTML = '🔊 Speaking...'; msg.onend = function() {{ btn.innerHTML = '🔊 Listen'; }};">🔊 Listen</button>
     </div>
     <style>
         .custom-tts-btn {{
