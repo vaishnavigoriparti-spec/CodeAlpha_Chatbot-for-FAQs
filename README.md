@@ -1,6 +1,8 @@
-# 🤖 Intelligent AI FAQ Chatbot
+# 🤖 CodeAlpha AI FAQ Chatbot (Internship Project)
 
-Welcome to the **Intelligent AI FAQ Chatbot** project. This is a production-ready, fully functional interactive web application that implements core Natural Language Processing (NLP) techniques, term-vector space indexing (TF-IDF), and mathematical cosine similarity to match user questions with the most relevant responses from an FAQ dataset.
+Welcome to the **CodeAlpha AI FAQ Chatbot** project! This is a professional, production-ready, fully functional interactive web application developed as part of the **CodeAlpha Artificial Intelligence Internship**. 
+
+It implements core Natural Language Processing (NLP) techniques, term-vector space indexing (TF-IDF), and mathematical cosine similarity to match user questions with the most relevant responses from an FAQ dataset.
 
 ---
 

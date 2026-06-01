@@ -45,7 +45,7 @@ def download_nltk_resources():
 # 2. STREAMLIT PAGE INITIALIZATION
 # ==========================================
 st.set_page_config(
-    page_title="AI FAQ Chatbot",
+    page_title="CodeAlpha AI FAQ Chatbot",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -401,19 +401,19 @@ with st.sidebar:
     st.markdown("""
     <div class="sidebar-profile">
         <div class="sidebar-avatar">🤖</div>
-        <h2 style='margin: 0; font-size: 1.5rem; font-weight: 600;'>AI FAQ Bot</h2>
-        <p style='margin: 5px 0 0 0; color: #6c63ff; font-size: 0.85rem; letter-spacing: 1px; font-weight: 600;'>INTELLIGENT ASSISTANT</p>
+        <h2 style='margin: 0; font-size: 1.4rem; font-weight: 600;'>CodeAlpha FAQ Bot</h2>
+        <p style='margin: 5px 0 0 0; color: #ff6584; font-size: 0.75rem; letter-spacing: 1px; font-weight: 600; text-transform: uppercase;'>Internship Assignment</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Section 1: System Info
-    st.markdown("### 📊 System Information")
+    st.markdown("### 📊 Internship Information")
     st.markdown("""
     <div class="info-card">
-        <strong>Engine:</strong> TF-IDF Vectorizer<br/>
-        <strong>Metric:</strong> Cosine Similarity<br/>
-        <strong>Interface:</strong> Streamlit Wide Mode<br/>
-        <strong>Backend:</strong> Scikit-Learn & NLTK<br/>
+        <strong>Organization:</strong> CodeAlpha<br/>
+        <strong>Role:</strong> AI Intern Assignment<br/>
+        <strong>Developer:</strong> Jayvardhan<br/>
+        <strong>Engine:</strong> TF-IDF & Cosine Similarity<br/>
         <strong>Status:</strong> Active ✅
     </div>
     """, unsafe_allow_html=True)
@@ -464,7 +464,8 @@ with st.sidebar:
 # Main Screen Header Layout
 st.markdown("""
 <div class="header-container">
-    <h1 class="header-title">🤖 AI FAQ Intelligent Chatbot</h1>
+    <span style="color: #6c63ff; font-weight: 700; font-size: 0.9rem; letter-spacing: 1.5px; text-transform: uppercase;">CodeAlpha Internship Project</span>
+    <h1 class="header-title" style="margin-top: 5px;">🤖 AI FAQ Intelligent Chatbot</h1>
     <p class="header-subtitle">Fully Powered by Advanced NLP, Vector Space Modeling & Cosine Similarity Algorithms</p>
 </div>
 """, unsafe_allow_html=True)
