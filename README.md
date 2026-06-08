@@ -52,25 +52,25 @@ AuraFAQ is a professional, production-ready, fully functional interactive web ap
 
 ```mermaid
 graph TD
-    A[User Inputs Question] --> B[NLTK Processing Pipeline]
-    B --> B1[Convert to Lowercase]
-    B1 --> B2[Strip Punctuation & Special Characters]
-    B2 --> B3[Word Tokenize with NLTK]
-    B3 --> B4[Remove Common Stopwords]
-    B4 --> B5[Lemmatize words to root form]
+    A["User Inputs Question"] --> B["NLTK Processing Pipeline"]
+    B --> B1["Convert to Lowercase"]
+    B1 --> B2["Strip Punctuation & Special Characters"]
+    B2 --> B3["Word Tokenize with NLTK"]
+    B3 --> B4["Remove Common Stopwords"]
+    B4 --> B5["Lemmatize words to root form"]
     
-    B5 --> C[Algorithmic Similarity Engine]
-    C --> C1[TfidfVectorizer creates TF-IDF Matrix]
-    C1 --> C2[Compute Cosine Similarity between Query & Dataset]
+    B5 --> C["Algorithmic Similarity Engine"]
+    C --> C1["TfidfVectorizer creates TF-IDF Matrix"]
+    C1 --> C2["Compute Cosine Similarity between Query & Dataset"]
     
-    C2 --> D{Is Highest Cosine Score >= Threshold?}
+    C2 --> D{"Is Highest Cosine Score >= Threshold?"}
     
-    D -- Yes --> E[Return Best FAQ Answer]
-    D -- No --> F[Return Fallback: 'I couldn't find a high-confidence match...']
+    D -- Yes --> E["Return Best FAQ Answer"]
+    D -- No --> F["Return Fallback: I couldn't find a high-confidence match..."]
     
-    E --> G[Display Output with Typewriter Stream Effect]
+    E --> G["Display Output with Typewriter Stream Effect"]
     F --> G
-    G --> H[Enable Interactive 🔊 Listen TTS Button & Confidence Metric]
+    G --> H["Enable Interactive Listen TTS Button & Confidence Metric"]
 ```
 
 ---
