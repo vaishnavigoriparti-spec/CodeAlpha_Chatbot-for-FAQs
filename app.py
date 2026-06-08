@@ -9,112 +9,111 @@ import ssl
 from datetime import datetime
 
 # ==========================================
-# 1. ROBUST NLTK DOWNLOADS & CONFIG
+# 1. DEPENDENCY SETUP & RESOURCE PROCURING
 # ==========================================
-# Disable SSL verification for NLTK downlods to prevent Windows certificate issues
+# Suppress SSL verification warnings for NLTK package downloads on local machine
 try:
-    _create_unverified_https_context = ssl._create_unverified_context
+    _ssl_context_override = ssl._create_unverified_context
 except AttributeError:
     pass
 else:
-    ssl._create_default_https_context = _create_unverified_https_context
+    ssl._create_default_https_context = _ssl_context_override
 
-# Initialize session state for loading NLTK resources
-if "nltk_downloaded" not in st.session_state:
-    st.session_state.nltk_downloaded = False
+# Track initialization status in session state
+if "nlp_initialized" not in st.session_state:
+    st.session_state.nlp_initialized = False
 
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
-def download_nltk_resources():
-    """Silently download all required NLTK resources with status checks."""
-    if st.session_state.nltk_downloaded:
+def initialize_nlp_dependencies():
+    """Ensure all required natural language processing models are downloaded locally."""
+    if st.session_state.nlp_initialized:
         return
     
-    resources = ['punkt', 'stopwords', 'wordnet', 'omw-1.4']
-    for res in resources:
+    required_packages = ['punkt', 'stopwords', 'wordnet', 'omw-1.4']
+    for package in required_packages:
         try:
-            nltk.download(res, quiet=True)
-        except Exception as e:
-            st.error(f"Failed to download NLTK '{res}': {e}")
-    st.session_state.nltk_downloaded = True
+            nltk.download(package, quiet=True)
+        except Exception as err:
+            st.error(f"Dependency download error for '{package}': {err}")
+    st.session_state.nlp_initialized = True
 
 # ==========================================
-# 2. STREAMLIT PAGE INITIALIZATION
+# 2. APPLICATION INITIAL CONFIGURATION
 # ==========================================
 st.set_page_config(
-    page_title="CodeAlpha AI FAQ Chatbot",
-    page_icon="🤖",
+    page_title="AuraFAQ - Intelligent Semantic Assistant",
+    page_icon="🌌",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Call NLTK downloader with a beautiful loading animation
-if not st.session_state.nltk_downloaded:
-    with st.spinner("🧠 Initializing AI Core & NLP Models... Please wait..."):
-        download_nltk_resources()
+# Show a premium glowing loader during NLTK loading
+if not st.session_state.nlp_initialized:
+    with st.spinner("🌌 Initializing AI Core & Semantic Processing Systems..."):
+        initialize_nlp_dependencies()
 
 # ==========================================
-# 3. GLOBAL TEXT PREPROCESSOR & ALGORITHMS
+# 3. TEXT PREPROCESSING PIPELINE
 # ==========================================
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 try:
-    lemmatizer = WordNetLemmatizer()
-    stop_words = set(stopwords.words('english'))
+    word_lemmatizer = WordNetLemmatizer()
+    english_stopwords = set(stopwords.words('english'))
 except Exception:
-    lemmatizer = None
-    stop_words = None
+    word_lemmatizer = None
+    english_stopwords = None
 
-def preprocess_text(text):
-    """Tokenize, clean, remove stopwords, and lemmatize text."""
-    if not isinstance(text, str):
+def clean_and_tokenize(input_text):
+    """Normalize, strip punctuation, remove noise, and lemmatize textual tokens."""
+    if not isinstance(input_text, str):
         return ""
     
-    # Lowercase & strip
-    text = text.lower().strip()
+    # Normalize text to lower case and strip whitespaces
+    input_text = input_text.lower().strip()
     
-    # Remove punctuation & special characters
-    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+    # Strip non-alphanumeric character structures
+    input_text = re.sub(r'[^a-zA-Z0-9\s]', '', input_text)
     
-    # Fallback to simple split if NLTK is failed/not loaded
-    if not lemmatizer or not stop_words:
-        return " ".join([word for word in text.split() if len(word) > 1])
+    # Simple split fallback if NLTK tools failed to initialize
+    if not word_lemmatizer or not english_stopwords:
+        return " ".join([word for word in input_text.split() if len(word) > 1])
     
     try:
-        tokens = word_tokenize(text)
-        # Filter out stopwords and lemmatize
-        cleaned_tokens = [
-            lemmatizer.lemmatize(token) 
-            for token in tokens 
-            if token not in stop_words and len(token) > 0
+        token_list = word_tokenize(input_text)
+        # Filter stopwords and lemmatize to base grammatical form
+        refined_tokens = [
+            word_lemmatizer.lemmatize(token) 
+            for token in token_list 
+            if token not in english_stopwords and len(token) > 0
         ]
-        return " ".join(cleaned_tokens)
+        return " ".join(refined_tokens)
     except Exception:
-        # Secondary fallback
-        return " ".join([word for word in text.split() if len(word) > 1])
+        # Secondary basic fallback
+        return " ".join([word for word in input_text.split() if len(word) > 1])
 
 # ==========================================
-# 4. LOAD FAQ DATASET WITH FALLBACKS
+# 4. CORPUS ACQUISITION (FAQ DATASET)
 # ==========================================
 @st.cache_data
-def load_faq_data():
-    """Load FAQ dataset from CSV. Falls back to pre-defined dataset if file error."""
-    csv_path = "faq.csv"
-    if os.path.exists(csv_path):
+def retrieve_faq_corpus():
+    """Retrieve FAQ database from local storage, fallback to precompiled data if missing."""
+    data_source = "faq.csv"
+    if os.path.exists(data_source):
         try:
-            df = pd.read_csv(csv_path)
-            # Ensure proper headers exist
-            if 'Question' in df.columns and 'Answer' in df.columns:
-                return df
-        except Exception as e:
-            st.error(f"Error loading {csv_path}: {e}")
+            dataframe = pd.read_csv(data_source)
+            if 'Question' in dataframe.columns and 'Answer' in dataframe.columns:
+                return dataframe
+        except Exception as error:
+            st.error(f"Error reading dataset files: {error}")
             
-    # Premium fallback FAQ dataset in case CSV is missing or broken
-    fallback_data = {
+    # Default fallback FAQ dataset
+    default_faq = {
         'Question': [
             "What is Artificial Intelligence (AI)?",
             "What is Machine Learning (ML)?",
@@ -148,424 +147,484 @@ def load_faq_data():
             "Natural Language Processing (NLP) is used in a wide range of real-world applications, including virtual assistants, machine translation (e.g. Google Translate), sentiment analysis, text summarization, spam filters, and conversational chatbots."
         ]
     }
-    return pd.DataFrame(fallback_data)
+    return pd.DataFrame(default_faq)
 
-faq_df = load_faq_data()
+faq_dataframe = retrieve_faq_corpus()
 
 # ==========================================
-# 5. CUSTOM STYLING (GLASSMORPHISM VIBE)
+# 5. CYBER MIDNIGHT GLOWING THEME (CSS)
 # ==========================================
-def apply_custom_styles():
+def inject_cyber_theme():
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
     
-    /* Global Styles */
+    /* Fonts and Basic Overrides */
     html, body, [class*="css"] {
         font-family: 'Outfit', sans-serif;
     }
     
-    /* Modern Banner Design */
-    .header-container {
-        background: linear-gradient(135deg, rgba(108, 99, 255, 0.15) 0%, rgba(255, 101, 132, 0.15) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Cyber Midnight Header Banner */
+    .dashboard-header {
+        background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 50%, rgba(102, 126, 234, 0.1) 100%);
+        border: 1px solid rgba(0, 242, 254, 0.2);
         border-radius: 20px;
-        padding: 30px;
-        margin-bottom: 25px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        padding: 35px 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px 0 rgba(0, 242, 254, 0.08);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         text-align: center;
+        position: relative;
+        overflow: hidden;
     }
-    .header-title {
-        font-size: 2.8rem;
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -50%;
+        width: 200%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(0, 242, 254, 0.05) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .main-title {
+        font-size: 3rem;
         font-weight: 700;
         margin: 0;
-        background: linear-gradient(135deg, #6c63ff 0%, #ff6584 100%);
+        background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #667eea 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0px 4px 10px rgba(108, 99, 255, 0.15);
+        filter: drop-shadow(0px 2px 8px rgba(0, 242, 254, 0.3));
+        letter-spacing: -0.5px;
     }
-    .header-subtitle {
-        font-size: 1.1rem;
+    
+    .main-subtitle {
+        font-size: 1.15rem;
         font-weight: 400;
-        color: #7d8597;
-        margin-top: 10px;
+        color: #94a3b8;
+        margin-top: 12px;
         margin-bottom: 0;
+        letter-spacing: 0.2px;
     }
     
-    /* Info Card UI */
-    .info-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Sleek Translucent Metric Sidebar Cards */
+    .system-card {
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(79, 172, 254, 0.15);
         border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        transition: transform 0.3s ease;
-    }
-    .info-card:hover {
-        transform: translateY(-3px);
-        border-color: rgba(108, 99, 255, 0.2);
+        padding: 22px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
-    /* Metrics Badge */
-    .metric-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #6c63ff, #8b5cf6);
-        color: white;
-        padding: 4px 12px;
+    .system-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0, 242, 254, 0.4);
+        box-shadow: 0 8px 32px rgba(0, 242, 254, 0.1);
+    }
+    
+    /* Premium Accuracy Badges */
+    .accuracy-indicator-high {
+        display: inline-flex;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.15));
+        border: 1px solid rgba(0, 242, 254, 0.4);
+        color: #00f2fe;
+        padding: 5px 14px;
         border-radius: 50px;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 600;
-        margin-top: 8px;
+        margin-top: 10px;
+        box-shadow: 0 0 10px rgba(0, 242, 254, 0.1);
     }
-    .metric-badge-low {
-        display: inline-block;
-        background: linear-gradient(135deg, #ff6584, #f43f5e);
-        color: white;
-        padding: 4px 12px;
+    
+    .accuracy-indicator-low {
+        display: inline-flex;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(244, 63, 94, 0.12), rgba(225, 29, 72, 0.12));
+        border: 1px solid rgba(244, 63, 94, 0.4);
+        color: #fb7185;
+        padding: 5px 14px;
         border-radius: 50px;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 600;
-        margin-top: 8px;
+        margin-top: 10px;
+        box-shadow: 0 0 10px rgba(244, 63, 94, 0.1);
     }
     
-    /* Quick Actions */
-    .quick-title {
+    /* Interactive Prompts Headers */
+    .quick-prompts-header {
         font-weight: 600;
-        font-size: 1rem;
-        color: #6c63ff;
-        margin-bottom: 10px;
-    }
-    
-    /* Custom Sidebar Avatar Header */
-    .sidebar-profile {
-        text-align: center;
-        padding: 20px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        margin-bottom: 20px;
-    }
-    .sidebar-avatar {
-        font-size: 4rem;
-        margin-bottom: 10px;
-        animation: float 3s ease-in-out infinite;
-    }
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-    }
-    
-    /* Chat Avatars & Area Styling */
-    [data-testid="stChatMessage"] {
-        border-radius: 18px;
-        padding: 16px;
+        font-size: 1.05rem;
+        color: #00f2fe;
         margin-bottom: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
+    
+    /* Avatar Pulsing Side Panel UI */
+    .avatar-wrapper {
+        text-align: center;
+        padding: 25px 0 20px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 25px;
+    }
+    
+    .pulsing-avatar {
+        font-size: 4.2rem;
+        margin-bottom: 12px;
+        display: inline-block;
+        position: relative;
+        animation: pulseAvatar 4s ease-in-out infinite;
+    }
+    
+    @keyframes pulseAvatar {
+        0% { transform: translateY(0px) scale(1); filter: drop-shadow(0 0 0px rgba(0, 242, 254, 0)); }
+        50% { transform: translateY(-8px) scale(1.03); filter: drop-shadow(0 4px 12px rgba(0, 242, 254, 0.35)); }
+        100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 0 0px rgba(0, 242, 254, 0)); }
+    }
+    
+    /* Customizing Streamlit Native Chat Interfaces */
+    [data-testid="stChatMessage"] {
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        background-color: rgba(30, 41, 59, 0.2) !important;
+        backdrop-filter: blur(4px);
+        transition: border 0.3s ease;
+    }
+    
+    [data-testid="stChatMessage"]:hover {
+        border-color: rgba(0, 242, 254, 0.12);
+    }
+    
+    /* Chat Bubble Markdown font adjustments */
     [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
-        font-size: 0.98rem;
-        line-height: 1.5;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #e2e8f0;
+    }
+    
+    /* Custom Scrollbar for Streamlit */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(0, 242, 254, 0.2);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 242, 254, 0.4);
     }
     </style>
     """, unsafe_allow_html=True)
 
-apply_custom_styles()
+inject_cyber_theme()
 
 # ==========================================
-# 6. IN-LINE HTML TEXT-TO-SPEECH HELPER
+# 6. IN-LINE HTML TEXT-TO-SPEECH ELEMENT
 # ==========================================
-def get_tts_button_html(text, message_id):
-    """Generate professional, zero-dependency, safe Web Speech API button."""
-    escaped_text = html.escape(text.replace("'", "\\'").replace("\n", " "))
-    button_id = f"tts_btn_{message_id}"
+def generate_speech_synthesis_element(response_text, unique_id):
+    """Embed Web Speech API dynamic speech elements safely."""
+    escaped_text = html.escape(response_text.replace("'", "\\'").replace("\n", " "))
+    node_id = f"speech_synthesis_node_{unique_id}"
     
-    # We write the button element entirely on a single line to prevent the Streamlit Markdown parser from leaking raw code.
-    html_content = f"""
+    # One-line layout for the button structures to prevent formatting anomalies
+    element_html = f"""
     <div style="display: flex; justify-content: flex-end; margin-top: -10px; margin-bottom: 15px;">
-        <button id="{button_id}" class="custom-tts-btn" onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{escaped_text}'); msg.rate = 1.0; msg.pitch = 1.05; var voices = window.speechSynthesis.getVoices(); var englishVoice = voices.find(v => v.lang.startsWith('en')); if(englishVoice) msg.voice = englishVoice; window.speechSynthesis.speak(msg); var btn = document.getElementById('{button_id}'); btn.innerHTML = '🔊 Speaking...'; msg.onend = function() {{ btn.innerHTML = '🔊 Listen'; }};">🔊 Listen</button>
+        <button id="{node_id}" class="glow-speech-trigger" onclick="window.speechSynthesis.cancel(); var speechUtterance = new SpeechSynthesisUtterance('{escaped_text}'); speechUtterance.rate = 0.98; speechUtterance.pitch = 1.02; var systemVoices = window.speechSynthesis.getVoices(); var defaultEnglish = systemVoices.find(v => v.lang.startsWith('en')); if(defaultEnglish) speechUtterance.voice = defaultEnglish; window.speechSynthesis.speak(speechUtterance); var btnElement = document.getElementById('{node_id}'); btnElement.innerHTML = '🔊 Speaking...'; speechUtterance.onend = function() {{ btnElement.innerHTML = '🔊 Listen'; }};">🔊 Listen</button>
     </div>
     <style>
-        .custom-tts-btn {{
-            background: linear-gradient(135deg, rgba(108, 99, 255, 0.08), rgba(255, 101, 132, 0.08));
-            color: #6c63ff;
-            border: 1px solid rgba(108, 99, 255, 0.25);
+        .glow-speech-trigger {{
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.05), rgba(79, 172, 254, 0.05));
+            color: #00f2fe;
+            border: 1px solid rgba(0, 242, 254, 0.3);
             border-radius: 10px;
-            padding: 4px 12px;
-            font-size: 0.78rem;
+            padding: 5px 14px;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             font-weight: 500;
             outline: none;
         }}
-        .custom-tts-btn:hover {{
-            background: linear-gradient(135deg, #6c63ff, #ff6584);
-            color: white !important;
+        .glow-speech-trigger:hover {{
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #0f172a !important;
             border-color: transparent;
-            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.25);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.45);
             transform: translateY(-1px);
         }}
-        .custom-tts-btn:active {{
+        .glow-speech-trigger:active {{
             transform: translateY(0px);
         }}
     </style>
     """
-    return html_content
+    return element_html
 
 # ==========================================
-# 7. CHATBOT MATHS & TF-IDF CORE ENGINE
+# 7. COGNITIVE ENGINE (SIMILARITY SEARCH)
 # ==========================================
-def calculate_best_faq_match(query, faq_data, threshold=0.30):
-    """Perform text cleaning, TF-IDF vectorization, and cosine similarity matching."""
-    # Preprocess questions
-    faq_data['Processed_Question'] = faq_data['Question'].apply(preprocess_text)
+def evaluate_semantic_similarity(user_query, faq_dataset, confidence_limit=0.30):
+    """Normalize user input, translate to TF-IDF matrix, and evaluate matching entries."""
+    # Process the dataset question fields
+    faq_dataset['Normalized_Question'] = faq_dataset['Question'].apply(clean_and_tokenize)
     
-    # Preprocess user query
-    processed_query = preprocess_text(query)
+    # Process user query
+    normalized_query = clean_and_tokenize(user_query)
     
-    # Fallback to raw lowercase if the clean result is empty (e.g. stopword-only queries)
-    if not processed_query.strip():
-        processed_query = query.lower().strip()
+    # Fallback to standard lowercase split if all words were stopwords
+    if not normalized_query.strip():
+        normalized_query = user_query.lower().strip()
         
     try:
-        # Initialize Scikit-Learn TF-IDF Vectorizer
-        vectorizer = TfidfVectorizer(token_pattern=r'(?u)\b\w+\b')
-        tfidf_matrix = vectorizer.fit_transform(faq_data['Processed_Question'])
+        # Initialize text frequency-inverse document frequency vectorizer
+        tfidf_model = TfidfVectorizer(token_pattern=r'(?u)\b\w+\b')
+        dataset_matrix = tfidf_model.fit_transform(faq_dataset['Normalized_Question'])
         
-        # Transform user query
-        query_vector = vectorizer.transform([processed_query])
+        # Transform user query to matching dimension
+        query_vector = tfidf_model.transform([normalized_query])
         
-        # Calculate cosine similarities between query and each FAQ question
-        similarities = cosine_similarity(query_vector, tfidf_matrix).flatten()
+        # Calculate cosine similarities
+        cosine_scores = cosine_similarity(query_vector, dataset_matrix).flatten()
         
-        # Get maximum similarity details
-        best_idx = similarities.argmax()
-        best_score = similarities[best_idx]
+        # Retrieve highest score indices
+        optimal_index = cosine_scores.argmax()
+        highest_score = cosine_scores[optimal_index]
         
-        # Check against confidence threshold
-        if best_score >= threshold:
-            answer = faq_data.iloc[best_idx]['Answer']
-            matched_question = faq_data.iloc[best_idx]['Question']
-            return answer, best_score, matched_question
+        # Evaluate against the parameterized boundary limit
+        if highest_score >= confidence_limit:
+            response_text = faq_dataset.iloc[optimal_index]['Answer']
+            original_question = faq_dataset.iloc[optimal_index]['Question']
+            return response_text, highest_score, original_question
         else:
-            return "Sorry, I couldn't understand your question. Could you try rephrasing it or choose one of the suggested FAQs below?", best_score, None
+            fallback_text = "I couldn't find a high-confidence match for that question. Could you please try rephrasing it or selecting one of the suggested FAQs?"
+            return fallback_text, highest_score, None
             
-    except Exception as e:
-        return f"⚠️ An algorithmic processing error occurred: {str(e)}", 0.0, None
+    except Exception as exc:
+        return f"⚠️ Semantic matching engine processing anomaly: {str(exc)}", 0.0, None
 
 # ==========================================
-# 8. STATE MANAGEMENT & SYSTEM FLOW
+# 8. CONVERSATIONAL SESSION CONTROLS
 # ==========================================
-# Initialize chat session history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Track interaction sequences
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# Welcome message
-if len(st.session_state.messages) == 0:
-    st.session_state.messages.append({
+# Populate fallback greeting message
+if len(st.session_state.chat_history) == 0:
+    st.session_state.chat_history.append({
         "role": "assistant",
-        "content": "👋 Hello! I am your intelligent **AI FAQ Assistant**. How can I help you understand AI, Machine Learning, Deep Learning, or NLP today? 🚀",
+        "content": "👋 Welcome! I am **AuraFAQ**, your interactive AI knowledge companion. Ask me any question about Artificial Intelligence, Machine Learning, Deep Learning, or NLP, and I will assist you! 🌌",
         "score": 1.0,
-        "match": "Welcome greeting",
-        "id": "welcome"
+        "match": "Default greeting node",
+        "id": "welcome_sequence"
     })
 
-# Handles suggested question clicks
-if "suggestion_clicked" not in st.session_state:
-    st.session_state.suggestion_clicked = None
+# Tracker for suggestions
+if "chosen_suggestion" not in st.session_state:
+    st.session_state.chosen_suggestion = None
 
-def trigger_suggestion(question):
-    st.session_state.suggestion_clicked = question
+def register_suggestion_selection(prompt_text):
+    st.session_state.chosen_suggestion = prompt_text
 
 # ==========================================
-# 9. GRAPHICAL USER INTERFACE
+# 9. DYNAMIC GRAPHICAL USER INTERFACE
 # ==========================================
 
-# Sidebar
+# Side Control Dashboard
 with st.sidebar:
     st.markdown("""
-    <div class="sidebar-profile">
-        <div class="sidebar-avatar">🤖</div>
-        <h2 style='margin: 0; font-size: 1.4rem; font-weight: 600;'>CodeAlpha FAQ Bot</h2>
-        <p style='margin: 5px 0 0 0; color: #ff6584; font-size: 0.75rem; letter-spacing: 1px; font-weight: 600; text-transform: uppercase;'>Internship Assignment</p>
+    <div class="avatar-wrapper">
+        <div class="pulsing-avatar">🌌</div>
+        <h2 style='margin: 0; font-size: 1.5rem; font-weight: 700; color: #f8fafc;'>AuraFAQ</h2>
+        <p style='margin: 4px 0 0 0; color: #00f2fe; font-size: 0.72rem; letter-spacing: 1.2px; font-weight: 600; text-transform: uppercase;'>Cognitive Assistant</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Section 1: System Info
-    st.markdown("### 📊 Internship Information")
-    st.markdown("""
-    <div class="info-card">
-        <strong>Organization:</strong> CodeAlpha<br/>
-        <strong>Role:</strong> AI Intern Assignment<br/>
-        <strong>Developer:</strong> Jayvardhan<br/>
-        <strong>Engine:</strong> TF-IDF & Cosine Similarity<br/>
-        <strong>Status:</strong> Active ✅
+    # Section 1: System Specifications
+    st.markdown("### 📊 Assistant Metrics")
+    st.markdown(f"""
+    <div class="system-card">
+        <strong>Engine Mode:</strong> Semantic TF-IDF<br/>
+        <strong>Knowledge Base:</strong> FAQ Database File<br/>
+        <strong>Size:</strong> {len(faq_dataframe)} Precompiled Items<br/>
+        <strong>Status:</strong> Online and Ready ✅
     </div>
     """, unsafe_allow_html=True)
     
-    # Section 2: Algorithmic Controls
+    # Section 2: Tuning Parameters
     st.markdown("### ⚙️ Engine Parameters")
-    conf_threshold = st.slider(
-        "Cosine Confidence Threshold 🎯", 
+    matching_boundary = st.slider(
+        "Match Confidence Cutoff 🎯", 
         min_value=0.10, 
         max_value=1.00, 
         value=0.30, 
         step=0.05,
-        help="Higher values demand an exact phrasing match; lower values allow broader contextual similarities."
+        help="Adjust the mathematical threshold required to accept a similarity match. Higher = exact matching; Lower = broader interpretation."
     )
     
-    # Section 3: FAQ Dataset Viewer
-    st.markdown("### 📚 Training FAQ Corpus")
-    with st.expander("Expand FAQ Dataset", expanded=False):
+    # Section 3: Training Dataset Accordion
+    st.markdown("### 📚 Knowledge Base Index")
+    with st.expander("Show Available FAQ Index", expanded=False):
         st.dataframe(
-            faq_df[['Question']], 
+            faq_dataframe[['Question']], 
             use_container_width=True, 
             hide_index=True
         )
-        st.markdown(f"_Total loaded FAQs: **{len(faq_df)} rows**_")
+        st.markdown(f"_Loaded: **{len(faq_dataframe)} semantic entries**_")
         
-    # Section 4: Utilities
+    # Section 4: Utility Controls
     st.markdown("### 🛠️ Utilities")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Reset Chat", use_container_width=True):
-            st.session_state.messages = []
-            st.session_state.suggestion_clicked = None
+    sidebar_col1, sidebar_col2 = st.columns(2)
+    with sidebar_col1:
+        if st.button("🔄 Clear Chat", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.chosen_suggestion = None
             st.rerun()
-    with col2:
-        # Download Chat History logic
-        if len(st.session_state.messages) > 1:
-            chat_text = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.messages])
+    with sidebar_col2:
+        # Export logic implementation
+        if len(st.session_state.chat_history) > 1:
+            raw_chat_transcript = "\n".join([f"{entry['role'].upper()}: {entry['content']}" for entry in st.session_state.chat_history])
             st.download_button(
-                label="📥 Export",
-                data=chat_text,
-                file_name="faq_chat_history.txt",
+                label="📥 Export Chat",
+                data=raw_chat_transcript,
+                file_name="aurafaq_session_export.txt",
                 mime="text/plain",
                 use_container_width=True
             )
         else:
-            st.button("📥 Export", disabled=True, use_container_width=True)
+            st.button("📥 Export Chat", disabled=True, use_container_width=True)
 
-# Main Screen Header Layout
+# Main Application Banner UI
 st.markdown("""
-<div class="header-container">
-    <span style="color: #6c63ff; font-weight: 700; font-size: 0.9rem; letter-spacing: 1.5px; text-transform: uppercase;">CodeAlpha Internship Project</span>
-    <h1 class="header-title" style="margin-top: 5px;">🤖 AI FAQ Intelligent Chatbot</h1>
-    <p class="header-subtitle">Fully Powered by Advanced NLP, Vector Space Modeling & Cosine Similarity Algorithms</p>
+<div class="dashboard-header">
+    <span style="color: #00f2fe; font-weight: 600; font-size: 0.82rem; letter-spacing: 2px; text-transform: uppercase;">Cognitive NLP Matching Engine</span>
+    <h1 class="main-title" style="margin-top: 5px;">AuraFAQ Knowledge Companion</h1>
+    <p class="main-subtitle">An intelligent assistant built with TF-IDF Vector Spaces and Mathematical Cosine Similarity</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Top stats banner
-col_stat1, col_stat2, col_stat3 = st.columns(3)
-with col_stat1:
-    st.info(f"📊 **FAQ Database Size:** {len(faq_df)} preprocessed questions", icon="💾")
-with col_stat2:
-    st.success(f"⚡ **Matching Engine:** TF-IDF Bag-of-Words Model", icon="🔥")
-with col_stat3:
-    st.warning(f"🎯 **Min Match Confidence:** {int(conf_threshold*100)}%", icon="🛡️")
+# Metrics Grid Layout
+stat_col1, stat_col2, stat_col3 = st.columns(3)
+with stat_col1:
+    st.info(f"📂 **Active FAQ Corpus:** {len(faq_dataframe)} Items", icon="📁")
+with stat_col2:
+    st.success(f"⚡ **Vector Space Model:** TF-IDF Bag-of-Words", icon="🧠")
+with stat_col3:
+    st.warning(f"🎯 **Similarity Threshold:** {int(matching_boundary*100)}%", icon="🛡️")
 
 st.markdown("<br/>", unsafe_allow_html=True)
 
-# Render Chat History
-for idx, message in enumerate(st.session_state.messages):
-    avatar = "🤖" if message["role"] == "assistant" else "👤"
+# Render Chat Feed from Session History
+for index, message_entry in enumerate(st.session_state.chat_history):
+    chat_avatar = "🌌" if message_entry["role"] == "assistant" else "👤"
     
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+    with st.chat_message(message_entry["role"], avatar=chat_avatar):
+        st.markdown(message_entry["content"])
         
-        # Display engineering details if available for bot answers
-        if message["role"] == "assistant" and "score" in message:
-            score = message["score"]
-            match_type = message["match"]
+        # Display engineering details/badging for assistant response elements
+        if message_entry["role"] == "assistant" and "score" in message_entry:
+            metric_score = message_entry["score"]
+            matched_query_name = message_entry["match"]
             
-            # Show a metric badge based on threshold
-            if score >= conf_threshold:
+            # Choose badge style according to validation scores
+            if metric_score >= matching_boundary:
                 st.markdown(
-                    f"""<div class='metric-badge'>Confidence Score: {score:.2f} ({int(score*100)}%) • Match: {html.escape(str(match_type))}</div>""", 
+                    f"""<div class='accuracy-indicator-high'>Match Score: {metric_score:.2f} ({int(metric_score*100)}%) • Match Index: {html.escape(str(matched_query_name))}</div>""", 
                     unsafe_allow_html=True
                 )
-            elif score > 0.0:
+            elif metric_score > 0.0:
                 st.markdown(
-                    f"""<div class='metric-badge-low'>Low Confidence: {score:.2f} ({int(score*100)}%) • Below Threshold ({int(conf_threshold*100)}%)</div>""", 
+                    f"""<div class='accuracy-indicator-low'>Match Score: {metric_score:.2f} ({int(metric_score*100)}%) • Below Threshold ({int(matching_boundary*100)}%)</div>""", 
                     unsafe_allow_html=True
                 )
             
-            # Play inline Voice Speech Synthesizer if score is positive
-            if score > 0.0 and message["id"] != "welcome":
-                st.markdown(get_tts_button_html(message["content"], f"msg_{idx}"), unsafe_allow_html=True)
+            # Render Speech Output button element if appropriate
+            if metric_score > 0.0 and message_entry["id"] != "welcome_sequence":
+                st.markdown(generate_speech_synthesis_element(message_entry["content"], f"session_msg_{index}"), unsafe_allow_html=True)
 
-# Handle Suggestion Clicked Event
-user_query = st.session_state.suggestion_clicked
+# Retrieve Query from clicked suggestion chip
+pending_query = st.session_state.chosen_suggestion
 
-# Capture Text Input
-chat_input_val = st.chat_input("Ask a question (e.g., 'What is machine learning?' or 'how to prevent overfitting?')")
-if chat_input_val:
-    user_query = chat_input_val
+# Native Chat Input Component
+text_input_query = st.chat_input("Enter your question here (e.g. 'What is machine learning?' or 'What is TF-IDF?')")
+if text_input_query:
+    pending_query = text_input_query
 
-# Processing User Query
-if user_query:
-    # Reset suggestion clicked state
-    st.session_state.suggestion_clicked = None
+# Handle incoming query execution
+if pending_query:
+    # Clear the temporary suggestion state
+    st.session_state.chosen_suggestion = None
     
-    # 1. Print User Chat Bubble
+    # 1. Append User Input
     with st.chat_message("user", avatar="👤"):
-        st.markdown(user_query)
+        st.markdown(pending_query)
         
-    st.session_state.messages.append({
+    st.session_state.chat_history.append({
         "role": "user",
-        "content": user_query
+        "content": pending_query
     })
     
-    # 2. Compute matching response
-    with st.chat_message("assistant", avatar="🤖"):
-        # Let's show a loading typewriter spinner
-        with st.spinner("🔍 Scanning Vector Space for matches..."):
-            ans, score, matched_q = calculate_best_faq_match(user_query, faq_df, conf_threshold)
-            time.sleep(0.3) # Subtle latency for realism
+    # 2. Process Assistant Output
+    with st.chat_message("assistant", avatar="🌌"):
+        with st.spinner("🌌 Scanning Vector Spaces & Computing Similarities..."):
+            matched_answer, evaluation_score, exact_match = evaluate_semantic_similarity(
+                pending_query, faq_dataframe, matching_boundary
+            )
+            time.sleep(0.25) # Minor latency addition to emulate thought process
             
-        # Stream output using typewriter effect
-        response_placeholder = st.empty()
-        full_response = ""
-        for word in ans.split(" "):
-            full_response += word + " "
-            response_placeholder.markdown(full_response + "▌")
+        # Stream response chunks to screen
+        output_placeholder = st.empty()
+        incremental_response = ""
+        for word in matched_answer.split(" "):
+            incremental_response += word + " "
+            output_placeholder.markdown(incremental_response + "▌")
             time.sleep(0.02)
-        response_placeholder.markdown(full_response)
+        output_placeholder.markdown(incremental_response)
         
-        # Display engineering details
-        if score >= conf_threshold:
+        # Display engineering details/badge elements
+        if evaluation_score >= matching_boundary:
             st.markdown(
-                f"""<div class='metric-badge'>Confidence Score: {score:.2f} ({int(score*100)}%) • Match: {html.escape(str(matched_q))}</div>""", 
+                f"""<div class='accuracy-indicator-high'>Match Score: {evaluation_score:.2f} ({int(evaluation_score*100)}%) • Match Index: {html.escape(str(exact_match))}</div>""", 
                 unsafe_allow_html=True
             )
-        elif score > 0.0:
+        elif evaluation_score > 0.0:
             st.markdown(
-                f"""<div class='metric-badge-low'>Low Confidence: {score:.2f} ({int(score*100)}%) • Below Threshold ({int(conf_threshold*100)}%)</div>""", 
+                f"""<div class='accuracy-indicator-low'>Match Score: {evaluation_score:.2f} ({int(evaluation_score*100)}%) • Below Threshold ({int(matching_boundary*100)}%)</div>""", 
                 unsafe_allow_html=True
             )
             
-        # Render TTS button
-        msg_id = f"msg_{len(st.session_state.messages)}"
-        if score > 0.0:
-            st.markdown(get_tts_button_html(ans, msg_id), unsafe_allow_html=True)
+        # Speech synthesizer triggers
+        generated_msg_id = f"session_msg_{len(st.session_state.chat_history)}"
+        if evaluation_score > 0.0:
+            st.markdown(generate_speech_synthesis_element(matched_answer, generated_msg_id), unsafe_allow_html=True)
             
-    # Append assistant's message to history
-    st.session_state.messages.append({
+    # Save Assistant Response to transcript logs
+    st.session_state.chat_history.append({
         "role": "assistant",
-        "content": ans,
-        "score": float(score),
-        "match": matched_q if matched_q else "None (Low Confidence)",
-        "id": msg_id
+        "content": matched_answer,
+        "score": float(evaluation_score),
+        "match": exact_match if exact_match else "None (Low Confidence)",
+        "id": generated_msg_id
     })
     st.rerun()
 
-# Display Suggested FAQ Chips at bottom (if no current conversation processing)
+# Suggested chips (Quick Prompts)
 st.markdown("<br/>", unsafe_allow_html=True)
-st.markdown("""<div class="quick-title">💡 Frequently Asked Questions (Click to Ask)</div>""", unsafe_allow_html=True)
-cols = st.columns(3)
-sample_prompts = [
+st.markdown("""<div class="quick-prompts-header">💡 Frequently Asked Questions (Click to Ask)</div>""", unsafe_allow_html=True)
+prompt_columns = st.columns(3)
+precompiled_prompts = [
     "What is Machine Learning?",
     "What is Deep Learning?",
     "What is Cosine Similarity?",
@@ -574,9 +633,9 @@ sample_prompts = [
     "What is the difference between stemming and lemmatization?"
 ]
 
-for index, prompt in enumerate(sample_prompts):
-    col_idx = index % 3
-    with cols[col_idx]:
-        if st.button(f"🔍 {prompt}", key=f"sug_{index}", use_container_width=True):
-            trigger_suggestion(prompt)
+for prompt_index, prompt_text in enumerate(precompiled_prompts):
+    column_selection = prompt_index % 3
+    with prompt_columns[column_selection]:
+        if st.button(f"🔍 {prompt_text}", key=f"sug_btn_{prompt_index}", use_container_width=True):
+            register_suggestion_selection(prompt_text)
             st.rerun()
